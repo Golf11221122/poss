@@ -2847,3 +2847,123 @@ and
         z-index: 500 !important;
     }
 }
+
+/* ========================================
+   SUCCESS MODAL MOBILE FIX
+======================================== */
+
+@media (max-width: 760px) {
+
+    /* เมื่อหน้าบันทึกการขายสำเร็จเปิดอยู่
+       ซ่อนแถบตะกร้าด้านล่าง */
+    body:has(#successModal:not(.hidden))
+    .mobile-cart-bar {
+        display: none !important;
+    }
+
+
+    /* Success Modal ต้องอยู่เหนือทุกอย่าง */
+    #successModal {
+        position: fixed !important;
+        inset: 0 !important;
+
+        z-index: 30000 !important;
+
+        display: flex !important;
+
+        align-items: flex-end !important;
+        justify-content: center !important;
+
+        padding: 0 !important;
+
+        background: rgba(0, 0, 0, .5) !important;
+    }
+
+
+    /* ถ้ามี hidden ต้องซ่อนจริง */
+    #successModal.hidden {
+        display: none !important;
+    }
+
+
+    /* กล่องผลการขาย */
+    #successModal .modal-card {
+        position: relative !important;
+
+        width: 100% !important;
+
+        max-height: 92dvh !important;
+
+        overflow-y: auto !important;
+
+        padding:
+            22px 18px
+            calc(
+                22px + env(safe-area-inset-bottom)
+            ) !important;
+
+        border-radius:
+            24px 24px 0 0 !important;
+
+        background: #fff !important;
+
+        -webkit-overflow-scrolling: touch;
+    }
+
+
+    /* ลดขนาดบางส่วนไม่ให้กินพื้นที่มากเกิน */
+    #successModal .success-icon {
+        width: 64px !important;
+        height: 64px !important;
+
+        margin-bottom: 10px !important;
+
+        font-size: 34px !important;
+    }
+
+
+    #successModal h2 {
+        margin: 6px 0 !important;
+        font-size: 25px !important;
+    }
+
+
+    #successModal .success-box {
+        margin: 14px 0 !important;
+    }
+
+
+    /* ปุ่มใบเสร็จ + เริ่มบิลใหม่ */
+    #successModal .actions {
+        position: sticky !important;
+
+        bottom: 0 !important;
+
+        display: grid !important;
+
+        grid-template-columns: 1fr 1fr !important;
+
+        gap: 10px !important;
+
+        margin-top: 16px !important;
+
+        padding:
+            10px 0
+            max(
+                4px,
+                env(safe-area-inset-bottom)
+            ) !important;
+
+        background: #fff !important;
+
+        z-index: 5 !important;
+    }
+
+
+    #successModal .actions button {
+        min-height: 52px !important;
+
+        font-weight: 700 !important;
+    }
+
+}
