@@ -1,10 +1,15 @@
 import { supabase } from './supabase.js'
 import { PROMPTPAY_PHONE } from './config.js'
 
+/* ========================================
+   STATE
+======================================== */
+
 const state = {
     session: null,
     profile: null,
     branch: null,
+
     categories: [],
     products: [],
 
@@ -12,48 +17,101 @@ const state = {
     availability: new Map(),
 
     selectedCategory: '',
+
+    // ตะกร้าสินค้า
     cart: new Map(),
+
+    // วิธีชำระเงิน
     paymentMethod: 'cash',
+
+    // บิลล่าสุด
     lastSale: null,
 
     // กะขายปัจจุบัน
     currentShift: null
 }
 
+
+/* ========================================
+   ELEMENT HELPERS
+======================================== */
+
 const $ = id =>
     document.getElementById(id)
 
+
 const el = {
-    backBtn: $('backBtn'),
-    logoutBtn: $('logoutBtn'),
 
-    branchText: $('branchText'),
-    userName: $('userName'),
+    /* HEADER */
 
-    searchInput: $('searchInput'),
-    refreshBtn: $('refreshBtn'),
+    backBtn:
+        $('backBtn'),
 
-    categoryTabs: $('categoryTabs'),
+    logoutBtn:
+        $('logoutBtn'),
 
-    loading: $('loading'),
-    empty: $('empty'),
-    productGrid: $('productGrid'),
+    branchText:
+        $('branchText'),
 
-    cartCount: $('cartCount'),
-    clearCartBtn: $('clearCartBtn'),
+    userName:
+        $('userName'),
 
-    emptyCart: $('emptyCart'),
-    cartItems: $('cartItems'),
 
-    subtotalText: $('subtotalText'),
-    discountInput: $('discountInput'),
-    totalText: $('totalText'),
+    /* CATALOG */
 
-    checkoutBtn: $('checkoutBtn'),
-    pageMessage: $('pageMessage'),
+    searchInput:
+        $('searchInput'),
 
-    // PAYMENT
-    paymentModal: $('paymentModal'),
+    refreshBtn:
+        $('refreshBtn'),
+
+    categoryTabs:
+        $('categoryTabs'),
+
+    loading:
+        $('loading'),
+
+    empty:
+        $('empty'),
+
+    productGrid:
+        $('productGrid'),
+
+
+    /* CART */
+
+    cartCount:
+        $('cartCount'),
+
+    clearCartBtn:
+        $('clearCartBtn'),
+
+    emptyCart:
+        $('emptyCart'),
+
+    cartItems:
+        $('cartItems'),
+
+    subtotalText:
+        $('subtotalText'),
+
+    discountInput:
+        $('discountInput'),
+
+    totalText:
+        $('totalText'),
+
+    checkoutBtn:
+        $('checkoutBtn'),
+
+    pageMessage:
+        $('pageMessage'),
+
+
+    /* PAYMENT */
+
+    paymentModal:
+        $('paymentModal'),
 
     closePaymentBtn:
         $('closePaymentBtn'),
@@ -88,14 +146,18 @@ const el = {
     confirmPaymentBtn:
         $('confirmPaymentBtn'),
 
-    // PROMPTPAY
+
+    /* PROMPTPAY */
+
     promptpayQr:
         $('promptpayQr'),
 
     qrAmountText:
         $('qrAmountText'),
 
-    // SUCCESS
+
+    /* SUCCESS */
+
     successModal:
         $('successModal'),
 
@@ -111,7 +173,9 @@ const el = {
     newSaleBtn:
         $('newSaleBtn'),
 
-    // RECEIPT
+
+    /* RECEIPT */
+
     printReceiptBtn:
         $('printReceiptBtn'),
 
@@ -159,26 +223,11 @@ const el = {
 
 const esc = value =>
     String(value ?? '')
-        .replaceAll(
-            '&',
-            '&amp;'
-        )
-        .replaceAll(
-            '<',
-            '&lt;'
-        )
-        .replaceAll(
-            '>',
-            '&gt;'
-        )
-        .replaceAll(
-            '"',
-            '&quot;'
-        )
-        .replaceAll(
-            "'",
-            '&#039;'
-        )
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
 
 
 const money = value =>
@@ -195,20 +244,17 @@ const money = value =>
 
 
 const items = () =>
-    [
-        ...state.cart.values()
-    ]
+    [...state.cart.values()]
 
 
 const subtotal = () =>
     items().reduce(
-        (
-            sum,
-            item
-        ) =>
+        (sum, item) =>
             sum +
-            Number(item.price) *
-            item.quantity,
+            (
+                Number(item.price) *
+                Number(item.quantity)
+            ),
         0
     )
 
@@ -216,7 +262,7 @@ const subtotal = () =>
 const discount = () =>
     Math.max(
         Number(
-            el.discountInput.value ||
+            el.discountInput?.value ||
             0
         ),
         0
@@ -235,6 +281,7 @@ function msg(
     target,
     text = ''
 ) {
+
     if (!target) {
         return
     }
@@ -252,61 +299,67 @@ function formatTLV(
     id,
     value
 ) {
+
     return (
         `${id}${String(
             value.length
         ).padStart(
             2,
             '0'
-        )
-        }${value}`
+        )}${value}`
     )
 }
 
 
-function crc16(payload) {
+function crc16(
+    payload
+) {
+
     let crc =
         0xFFFF
+
 
     for (
         let i = 0;
         i < payload.length;
         i++
     ) {
+
         crc ^=
-            payload
-                .charCodeAt(i)
+            payload.charCodeAt(i)
             <<
             8
+
 
         for (
             let j = 0;
             j < 8;
             j++
         ) {
+
             if (
-                (
-                    crc &
-                    0x8000
-                )
+                (crc & 0x8000)
                 !==
                 0
             ) {
+
                 crc =
-                    (
-                        crc << 1
-                    )
+                    (crc << 1)
                     ^
                     0x1021
+
             } else {
+
                 crc <<=
                     1
             }
+
 
             crc &=
                 0xFFFF
         }
     }
+
 
     return crc
         .toString(16)
@@ -321,6 +374,7 @@ function crc16(payload) {
 function normalizePromptPayPhone(
     phone
 ) {
+
     const cleaned =
         String(
             phone || ''
@@ -330,19 +384,21 @@ function normalizePromptPayPhone(
                 ''
             )
 
+
     if (
         !/^0\d{9}$/.test(
             cleaned
         )
     ) {
+
         throw new Error(
             'เบอร์ PromptPay ต้องเป็นเบอร์ไทย 10 หลัก'
         )
     }
 
+
     return (
-        `0066${cleaned.substring(1)
-        }`
+        `0066${cleaned.substring(1)}`
     )
 }
 
@@ -351,8 +407,10 @@ function generatePromptPayPayload(
     phone,
     amount
 ) {
+
     const numericAmount =
         Number(amount)
+
 
     if (
         !Number.isFinite(
@@ -361,15 +419,18 @@ function generatePromptPayPayload(
         ||
         numericAmount <= 0
     ) {
+
         throw new Error(
             'ยอดเงินสำหรับ QR ไม่ถูกต้อง'
         )
     }
 
+
     const target =
         normalizePromptPayPhone(
             phone
         )
+
 
     const merchantAccount =
         formatTLV(
@@ -382,8 +443,10 @@ function generatePromptPayPayload(
             target
         )
 
+
     let payload =
         ''
+
 
     payload +=
         formatTLV(
@@ -391,11 +454,13 @@ function generatePromptPayPayload(
             '01'
         )
 
+
     payload +=
         formatTLV(
             '01',
             '12'
         )
+
 
     payload +=
         formatTLV(
@@ -403,18 +468,20 @@ function generatePromptPayPayload(
             merchantAccount
         )
 
+
     payload +=
         formatTLV(
             '53',
             '764'
         )
 
+
     payload +=
         formatTLV(
             '54',
-            numericAmount
-                .toFixed(2)
+            numericAmount.toFixed(2)
         )
+
 
     payload +=
         formatTLV(
@@ -422,11 +489,13 @@ function generatePromptPayPayload(
             'TH'
         )
 
+
     payload +=
         formatTLV(
             '59',
             'PROMPTPAY'
         )
+
 
     payload +=
         formatTLV(
@@ -434,8 +503,10 @@ function generatePromptPayPayload(
             'BANGKOK'
         )
 
+
     payload +=
         '6304'
+
 
     return (
         payload +
@@ -445,11 +516,13 @@ function generatePromptPayPayload(
 
 
 function renderPromptPayQr() {
+
     if (
         !el.promptpayQr
         ||
         !el.qrAmountText
     ) {
+
         console.warn(
             'ไม่พบ promptpayQr หรือ qrAmountText ใน pos.html'
         )
@@ -457,29 +530,37 @@ function renderPromptPayQr() {
         return
     }
 
+
     const amount =
         total()
+
 
     el.promptpayQr.innerHTML =
         ''
 
+
     el.qrAmountText.textContent =
         money(amount)
 
+
     try {
+
         if (
             !window.QRCode
         ) {
+
             throw new Error(
                 'ไม่พบ QRCode library'
             )
         }
+
 
         const payload =
             generatePromptPayPayload(
                 PROMPTPAY_PHONE,
                 amount
             )
+
 
         new window.QRCode(
             el.promptpayQr,
@@ -502,23 +583,21 @@ function renderPromptPayQr() {
         )
 
     } catch (error) {
+
         console.error(
             'PromptPay QR error:',
             error
         )
 
+
         el.promptpayQr.innerHTML =
             `
-            <p
-                style="
-                    color:#d93025;
-                    text-align:center;
-                    padding:15px;
-                "
-            >
-                ${esc(
-                error.message
-            )}
+            <p style="
+                color:#d93025;
+                text-align:center;
+                padding:15px;
+            ">
+                ${esc(error.message)}
             </p>
             `
     }
@@ -530,6 +609,7 @@ function renderPromptPayQr() {
 ======================================== */
 
 async function requireSession() {
+
     const {
         data: {
             session
@@ -540,11 +620,14 @@ async function requireSession() {
             .auth
             .getSession()
 
+
     if (error) {
         throw error
     }
 
+
     if (!session) {
+
         location.replace(
             './index.html'
         )
@@ -552,8 +635,10 @@ async function requireSession() {
         return null
     }
 
+
     state.session =
         session
+
 
     return session
 }
@@ -566,6 +651,7 @@ async function requireSession() {
 async function loadProfile(
     id
 ) {
+
     const {
         data,
         error
@@ -583,17 +669,21 @@ async function loadProfile(
             )
             .maybeSingle()
 
+
     if (error) {
         throw error
     }
 
+
     if (
         !data?.branch_id
     ) {
+
         throw new Error(
             'บัญชียังไม่ได้กำหนดสาขา'
         )
     }
+
 
     state.profile =
         data
@@ -605,6 +695,7 @@ async function loadProfile(
 ======================================== */
 
 async function loadBranch() {
+
     const {
         data,
         error
@@ -622,19 +713,25 @@ async function loadBranch() {
             )
             .maybeSingle()
 
+
     if (error) {
         throw error
     }
 
+
     if (!data) {
+
         throw new Error(
             'ไม่พบสาขา'
         )
     }
 
+
     state.branch =
         data
 }
+
+
 /* ========================================
    CURRENT SHIFT
 ======================================== */
@@ -649,6 +746,7 @@ async function loadCurrentShift() {
             'get_current_shift'
         )
 
+
     if (error) {
 
         console.error(
@@ -656,10 +754,13 @@ async function loadCurrentShift() {
             error
         )
 
+
         state.currentShift =
             null
 
+
         updateShiftSaleState()
+
 
         throw error
     }
@@ -667,11 +768,13 @@ async function loadCurrentShift() {
 
     const shift =
         Array.isArray(data)
+
             ? (
                 data[0]
                 ||
                 null
             )
+
             : (
                 data
                 ||
@@ -679,12 +782,17 @@ async function loadCurrentShift() {
             )
 
 
+    /*
+     * ป้องกันกรณี RPC
+     * ส่งกะของสาขาอื่นกลับมา
+     */
     if (
         shift?.branch_id
         &&
         state.profile?.branch_id
         &&
-        shift.branch_id !==
+        shift.branch_id
+        !==
         state.profile.branch_id
     ) {
 
@@ -692,6 +800,7 @@ async function loadCurrentShift() {
             'Current shift belongs to another branch:',
             shift
         )
+
 
         state.currentShift =
             null
@@ -721,17 +830,14 @@ function hasOpenShift() {
 
 
     if (!shift) {
-
         return false
     }
 
 
     if (
-        shift.status !==
-        undefined
+        shift.status !== undefined
         &&
-        shift.status !==
-        null
+        shift.status !== null
     ) {
 
         const status =
@@ -809,6 +915,19 @@ function updateShiftSaleState() {
             el.pageMessage,
             'ยังไม่ได้เปิดกะ กรุณาเปิดกะก่อนเริ่มขาย'
         )
+
+    } else if (
+        canSell
+        &&
+        el.pageMessage?.textContent?.includes(
+            'ยังไม่ได้เปิดกะ'
+        )
+    ) {
+
+        msg(
+            el.pageMessage,
+            ''
+        )
     }
 }
 
@@ -859,15 +978,71 @@ async function requireOpenShift() {
 }
 
 /* ========================================
+   MOBILE CART
+======================================== */
+
+function openMobileCart() {
+
+    if (
+        window.innerWidth >
+        760
+    ) {
+        return
+    }
+
+
+    el.cartPanel
+        ?.classList
+        .add(
+            'mobile-open'
+        )
+
+
+    el.cartBackdrop
+        ?.classList
+        .add(
+            'show'
+        )
+
+
+    document.body.style.overflow =
+        'hidden'
+}
+
+
+function closeMobileCart() {
+
+    el.cartPanel
+        ?.classList
+        .remove(
+            'mobile-open'
+        )
+
+
+    el.cartBackdrop
+        ?.classList
+        .remove(
+            'show'
+        )
+
+
+    document.body.style.overflow =
+        ''
+}
+
+
+/* ========================================
    CATALOG
 ======================================== */
 
 async function loadCatalog() {
+
     el.loading
         .classList
         .remove(
             'hidden'
         )
+
 
     el.empty
         .classList
@@ -875,13 +1050,16 @@ async function loadCatalog() {
             'hidden'
         )
 
+
     el.productGrid
         .classList
         .add(
             'hidden'
         )
 
+
     try {
+
         const [
             categoriesResult,
             productsResult
@@ -937,41 +1115,46 @@ async function loadCatalog() {
                     )
             ])
 
+
         if (
             categoriesResult.error
         ) {
-            throw (
-                categoriesResult.error
-            )
+
+            throw categoriesResult.error
         }
+
 
         if (
             productsResult.error
         ) {
-            throw (
-                productsResult.error
-            )
+
+            throw productsResult.error
         }
 
+
         state.categories =
-            categoriesResult.data ||
+            categoriesResult.data
+            ||
             []
 
+
         state.products =
-            productsResult.data ||
+            productsResult.data
+            ||
             []
+
 
         renderCategories()
 
-        /*
-         * โหลดจำนวนสินค้าที่สามารถขายได้
-         * หลังโหลดสินค้าเรียบร้อย
-         */
+
         await loadAvailability()
+
 
         renderProducts()
 
+
     } finally {
+
         el.loading
             .classList
             .add(
@@ -986,6 +1169,7 @@ async function loadCatalog() {
 ======================================== */
 
 async function loadAvailability() {
+
     const {
         data,
         error
@@ -998,30 +1182,37 @@ async function loadAvailability() {
             }
         )
 
+
     if (error) {
+
         console.error(
             'Load availability error:',
             error
         )
 
+
         throw error
     }
 
+
     state.availability
         .clear()
+
 
     for (
         const row
         of
         data || []
     ) {
+
         state.availability.set(
             row.product_id,
             {
                 available_qty:
                     Math.max(
                         Number(
-                            row.available_qty ||
+                            row.available_qty
+                            ||
                             0
                         ),
                         0
@@ -1045,6 +1236,7 @@ async function loadAvailability() {
 function getAvailability(
     productId
 ) {
+
     return (
         state.availability
             .get(
@@ -1068,6 +1260,7 @@ function getAvailability(
 /* ========================================
    USER
 ======================================== */
+
 function renderUser() {
 
     el.userName.textContent =
@@ -1081,8 +1274,6 @@ function renderUser() {
 
     el.branchText.textContent =
         `สาขา: ${state.branch.name}`
-
-
 }
 
 
@@ -1091,14 +1282,17 @@ function renderUser() {
 ======================================== */
 
 function renderCategories() {
+
     el.categoryTabs.innerHTML =
         `
         <button
-            class="tab ${!state.selectedCategory
-            ? 'active'
-            : ''
-        }"
+            class="tab ${
+                !state.selectedCategory
+                    ? 'active'
+                    : ''
+            }"
             data-cat=""
+            type="button"
         >
             ทั้งหมด
         </button>
@@ -1109,21 +1303,21 @@ function renderCategories() {
                 category =>
                     `
                     <button
-                        class="tab ${state.selectedCategory
-                        ===
-                        category.id
-                        ? 'active'
-                        : ''
-                    }"
+                        class="tab ${
+                            state.selectedCategory
+                            ===
+                            category.id
+                                ? 'active'
+                                : ''
+                        }"
                         data-cat="${esc(
-                        category.id
-                    )
-                    }"
+                            category.id
+                        )}"
+                        type="button"
                     >
                         ${esc(
-                        category.name
-                    )
-                    }
+                            category.name
+                        )}
                     </button>
                     `
             )
@@ -1136,11 +1330,13 @@ function renderCategories() {
 ======================================== */
 
 function filtered() {
+
     const keyword =
         el.searchInput
             .value
             .trim()
             .toLowerCase()
+
 
     return state.products
         .filter(
@@ -1152,6 +1348,7 @@ function filtered() {
                     product.category_id
                     ===
                     state.selectedCategory
+
 
                 const searchText =
                     [
@@ -1165,12 +1362,14 @@ function filtered() {
                         .join(' ')
                         .toLowerCase()
 
+
                 const searchMatch =
                     !keyword
                     ||
                     searchText.includes(
                         keyword
                     )
+
 
                 return (
                     categoryMatch
@@ -1187,17 +1386,21 @@ function filtered() {
 ======================================== */
 
 function renderProducts() {
+
     const list =
         filtered()
+
 
     if (
         !list.length
     ) {
+
         el.empty
             .classList
             .remove(
                 'hidden'
             )
+
 
         el.productGrid
             .classList
@@ -1205,8 +1408,10 @@ function renderProducts() {
                 'hidden'
             )
 
+
         return
     }
+
 
     el.empty
         .classList
@@ -1214,11 +1419,13 @@ function renderProducts() {
             'hidden'
         )
 
+
     el.productGrid
         .classList
         .remove(
             'hidden'
         )
+
 
     el.productGrid.innerHTML =
         list
@@ -1230,118 +1437,121 @@ function renderProducts() {
                             product.id
                         )
 
+
                     const availableQty =
                         Math.floor(
                             availability
                                 .available_qty
                         )
 
-                    const soldOut =
-                        availableQty <= 0
 
-                    const stockText =
+                    const soldOut =
+                        availableQty <=
+                        0
+
+
+                    /*
+                     * บนมือถือ:
+                     * แสดงเฉพาะ
+                     * - หมด
+                     * - ใกล้หมด <= 10
+                     */
+                    let stockText =
+                        ''
+
+
+                    if (
                         soldOut
-                            ? `
-                                <div
-                                    style="
-                                        margin-top:6px;
-                                        font-size:13px;
-                                        font-weight:700;
-                                        color:#d93025;
-                                    "
-                                >
-                                    สินค้าหมด
-                                </div>
+                    ) {
+
+                        stockText =
                             `
-                            : `
-                                <div
-                                    style="
-                                        margin-top:6px;
-                                        font-size:12px;
-                                        color:#188038;
-                                        font-weight:700;
-                                    "
-                                >
-                                    ขายได้อีก
-                                    ${availableQty
-                                .toLocaleString(
+                            <div
+                                class="stock-status stock-out"
+                            >
+                                สินค้าหมด
+                            </div>
+                            `
+
+                    } else if (
+                        availableQty <=
+                        10
+                    ) {
+
+                        stockText =
+                            `
+                            <div
+                                class="stock-status stock-low"
+                            >
+                                เหลือ
+                                ${availableQty.toLocaleString(
                                     'th-TH'
-                                )
-                            }
-                                    จาน
-                                </div>
+                                )}
+                                จาน
+                            </div>
                             `
+                    }
+
 
                     return `
                         <article
                             class="
                                 product-card
-                                ${soldOut
-                            ? 'sold-out'
-                            : ''
-                        }
+                                ${
+                                    soldOut
+                                        ? 'sold-out'
+                                        : ''
+                                }
                             "
                         >
 
                             <button
+                                type="button"
                                 data-add="${esc(
-                            product.id
-                        )
-                        }"
-
-                                ${soldOut
-                            ? 'disabled'
-                            : ''
-                        }
-
-                                style="${soldOut
-                            ? 'opacity:.55;cursor:not-allowed;'
-                            : ''
-                        }"
+                                    product.id
+                                )}"
+                                ${
+                                    soldOut
+                                        ? 'disabled'
+                                        : ''
+                                }
                             >
 
                                 <div
-                                    class="
-                                        product-image
-                                    "
+                                    class="product-image"
                                 >
 
-                                    ${product.image_url
-                            ? `
+                                    ${
+                                        product.image_url
+
+                                            ? `
                                                 <img
                                                     src="${esc(
-                                product.image_url
-                            )
-                            }"
-
+                                                        product.image_url
+                                                    )}"
                                                     alt="${esc(
-                                product.name
-                            )
-                            }"
-
+                                                        product.name
+                                                    )}"
                                                     onerror="
                                                         this.parentElement.innerHTML='🍽️'
                                                     "
                                                 >
                                             `
-                            :
-                            '🍽️'
-                        }
+
+                                            : '🍽️'
+                                    }
 
                                 </div>
 
 
                                 <div
-                                    class="
-                                        product-info
-                                    "
+                                    class="product-info"
                                 >
 
                                     <h3>
                                         ${esc(
-                            product.name
-                        )
-                        }
+                                            product.name
+                                        )}
                                     </h3>
 
 
@@ -1352,15 +1562,15 @@ function renderProducts() {
 
                                         <strong>
                                             ${money(
-                            product.price
-                        )
-                        }
+                                                product.price
+                                            )}
                                         </strong>
 
 
-                                        ${soldOut
+                                        ${
+                                            soldOut
 
-                            ? `
+                                                ? `
                                                     <span
                                                         style="
                                                             color:#d93025;
@@ -1371,14 +1581,14 @@ function renderProducts() {
                                                     </span>
                                                 `
 
-                            : `
+                                                : `
                                                     <span
                                                         class="plus"
                                                     >
                                                         ＋
                                                     </span>
                                                 `
-                        }
+                                        }
 
                                     </div>
 
@@ -1395,24 +1605,31 @@ function renderProducts() {
 
 
 /* ========================================
-   ADD PRODUCT TO CART
+   ADD PRODUCT
 ======================================== */
 
-function add(id) {
+function add(
+    id
+) {
+
     const product =
         state.products.find(
             item =>
-                item.id === id
+                item.id ===
+                id
         )
+
 
     if (!product) {
         return
     }
 
+
     const availability =
         getAvailability(
             id
         )
+
 
     const availableQty =
         Math.floor(
@@ -1420,41 +1637,55 @@ function add(id) {
                 .available_qty
         )
 
+
     if (
-        availableQty <= 0
+        availableQty <=
+        0
     ) {
+
         msg(
             el.pageMessage,
             'สินค้านี้หมด เนื่องจากวัตถุดิบไม่เพียงพอ'
         )
 
+
         return
     }
+
 
     const old =
         state.cart.get(
             id
         )
 
+
     const currentQty =
-        old?.quantity ||
+        old?.quantity
+        ||
         0
+
 
     if (
         currentQty >=
         availableQty
     ) {
+
         msg(
             el.pageMessage,
             `เพิ่มไม่ได้ สามารถขาย ${product.name} ได้สูงสุด ${availableQty} จาน`
         )
 
+
         return
     }
 
+
     if (old) {
+
         old.quantity++
+
     } else {
+
         state.cart.set(
             id,
             {
@@ -1464,10 +1695,12 @@ function add(id) {
         )
     }
 
+
     msg(
         el.pageMessage,
         ''
     )
+
 
     renderCart()
 }
@@ -1481,26 +1714,28 @@ function qty(
     id,
     change
 ) {
+
     const item =
         state.cart.get(
             id
         )
 
+
     if (!item) {
         return
     }
 
-    /*
-     * ถ้ากดเพิ่ม
-     * ต้องตรวจจำนวนที่ขายได้จาก BOM ก่อน
-     */
+
     if (
-        change > 0
+        change >
+        0
     ) {
+
         const availability =
             getAvailability(
                 id
             )
+
 
         const availableQty =
             Math.floor(
@@ -1508,34 +1743,43 @@ function qty(
                     .available_qty
             )
 
+
         if (
             item.quantity >=
             availableQty
         ) {
+
             msg(
                 el.pageMessage,
                 `เพิ่มไม่ได้ สามารถขาย ${item.name} ได้สูงสุด ${availableQty} จาน`
             )
 
+
             return
         }
     }
 
+
     item.quantity +=
         change
 
+
     if (
-        item.quantity <= 0
+        item.quantity <=
+        0
     ) {
+
         state.cart.delete(
             id
         )
     }
 
+
     msg(
         el.pageMessage,
         ''
     )
+
 
     renderCart()
 }
@@ -1546,8 +1790,10 @@ function qty(
 ======================================== */
 
 function renderCart() {
+
     const list =
         items()
+
 
     const count =
         list.reduce(
@@ -1560,8 +1806,48 @@ function renderCart() {
             0
         )
 
-    el.cartCount.textContent =
-        `${count} รายการ`
+
+    /*
+     * Desktop count
+     */
+    if (
+        el.cartCount
+    ) {
+
+        el.cartCount.textContent =
+            `${count.toLocaleString(
+                'th-TH'
+            )} รายการ`
+    }
+
+
+    /*
+     * Mobile count
+     */
+    if (
+        el.mobileCartCount
+    ) {
+
+        el.mobileCartCount.textContent =
+            `${count.toLocaleString(
+                'th-TH'
+            )} รายการ`
+    }
+
+
+    /*
+     * Mobile total
+     */
+    if (
+        el.mobileCartTotal
+    ) {
+
+        el.mobileCartTotal.textContent =
+            money(
+                total()
+            )
+    }
+
 
     el.emptyCart
         .classList
@@ -1572,12 +1858,14 @@ function renderCart() {
             )
         )
 
+
     el.cartItems
         .classList
         .toggle(
             'hidden',
             !list.length
         )
+
 
     el.cartItems.innerHTML =
         list
@@ -1592,19 +1880,17 @@ function renderCart() {
 
                             <strong>
                                 ${esc(
-                        item.name
-                    )
-                    }
+                                    item.name
+                                )}
                             </strong>
+
 
                             <small>
                                 ${money(
-                        item.price
-                    )
-                    }
+                                    item.price
+                                )}
                                 ×
-                                ${item.quantity
-                    }
+                                ${item.quantity}
                             </small>
 
 
@@ -1613,34 +1899,39 @@ function renderCart() {
                             >
 
                                 <button
+                                    type="button"
                                     data-act="dec"
-                                    data-id="${item.id
-                    }"
+                                    data-id="${esc(
+                                        item.id
+                                    )}"
                                 >
                                     −
                                 </button>
 
 
                                 <b>
-                                    ${item.quantity
-                    }
+                                    ${item.quantity}
                                 </b>
 
 
                                 <button
+                                    type="button"
                                     data-act="inc"
-                                    data-id="${item.id
-                    }"
+                                    data-id="${esc(
+                                        item.id
+                                    )}"
                                 >
                                     ＋
                                 </button>
 
 
                                 <button
+                                    type="button"
                                     class="remove"
                                     data-act="remove"
-                                    data-id="${item.id
-                    }"
+                                    data-id="${esc(
+                                        item.id
+                                    )}"
                                 >
                                     ลบ
                                 </button>
@@ -1652,13 +1943,12 @@ function renderCart() {
 
                         <strong>
                             ${money(
-                        Number(
-                            item.price
-                        )
-                        *
-                        item.quantity
-                    )
-                    }
+                                Number(
+                                    item.price
+                                )
+                                *
+                                item.quantity
+                            )}
                         </strong>
 
                     </div>
@@ -1666,20 +1956,24 @@ function renderCart() {
             )
             .join('')
 
+
     el.subtotalText.textContent =
         money(
             subtotal()
         )
+
 
     el.totalText.textContent =
         money(
             total()
         )
 
+
     el.checkoutBtn.disabled =
-    !list.length
-    ||
-    !hasOpenShift()
+        !list.length
+        ||
+        !hasOpenShift()
+
 
     if (
         !hasOpenShift()
@@ -1724,7 +2018,7 @@ async function openPayment() {
 
 
     /*
-     * เช็กกะล่าสุดก่อนเปิดหน้าชำระเงิน
+     * เช็กกะล่าสุดก่อนชำระ
      */
     const shiftReady =
         await requireOpenShift()
@@ -1738,8 +2032,16 @@ async function openPayment() {
     }
 
 
+    /*
+     * ถ้าเปิดจากมือถือ
+     * ปิด Bottom Sheet ก่อน
+     */
+    closeMobileCart()
+
+
     state.paymentMethod =
         'cash'
+
 
     el.paymentModal
         .classList
@@ -1747,17 +2049,20 @@ async function openPayment() {
             'hidden'
         )
 
-    el.paymentTotalText
-        .textContent =
+
+    el.paymentTotalText.textContent =
         money(
             total()
         )
 
+
     el.receivedInput.value =
         ''
 
+
     el.saleNote.value =
         ''
+
 
     document
         .querySelectorAll(
@@ -1770,14 +2075,13 @@ async function openPayment() {
                     .classList
                     .toggle(
                         'active',
-                        button
-                            .dataset
-                            .method
+                        button.dataset.method
                         ===
                         'cash'
                     )
             }
         )
+
 
     el.cashSection
         .classList
@@ -1785,15 +2089,19 @@ async function openPayment() {
             'hidden'
         )
 
+
     el.qrSection
         .classList
         .add(
             'hidden'
         )
 
+
     renderQuickCash()
 
+
     updateChange()
+
 
     msg(
         el.paymentMessage,
@@ -1803,6 +2111,7 @@ async function openPayment() {
 
 
 function closePayment() {
+
     el.paymentModal
         .classList
         .add(
@@ -1816,8 +2125,10 @@ function closePayment() {
 ======================================== */
 
 function renderQuickCash() {
+
     const amount =
         total()
+
 
     const values =
         [
@@ -1845,7 +2156,8 @@ function renderQuickCash() {
                     index,
                     array
                 ) =>
-                    value >= amount
+                    value >=
+                    amount
                     &&
                     array.indexOf(
                         value
@@ -1858,20 +2170,19 @@ function renderQuickCash() {
                 4
             )
 
+
     el.quickCash.innerHTML =
         values
             .map(
                 value =>
                     `
                     <button
-                        data-cash="${value
-                    }"
+                        type="button"
+                        data-cash="${value}"
                     >
-                        ${value
-                        .toLocaleString(
+                        ${value.toLocaleString(
                             'th-TH'
-                        )
-                    }
+                        )}
                     </button>
                     `
             )
@@ -1884,6 +2195,7 @@ function renderQuickCash() {
 ======================================== */
 
 function updateChange() {
+
     const received =
         Number(
             el.receivedInput
@@ -1891,6 +2203,7 @@ function updateChange() {
             ||
             0
         )
+
 
     el.changeText.textContent =
         money(
@@ -1908,34 +2221,42 @@ function updateChange() {
 ======================================== */
 
 function renderReceipt() {
+
     const sale =
         state.lastSale
+
 
     if (!sale) {
         return
     }
 
+
     if (
         el.receiptBranch
     ) {
+
         el.receiptBranch.textContent =
             state.branch?.name
             ||
             '-'
     }
 
+
     if (
         el.receiptInvoice
     ) {
+
         el.receiptInvoice.textContent =
             sale.invoice_no
             ||
             '-'
     }
 
+
     if (
         el.receiptDate
     ) {
+
         el.receiptDate.textContent =
             new Intl.DateTimeFormat(
                 'th-TH',
@@ -1951,9 +2272,11 @@ function renderReceipt() {
             )
     }
 
+
     if (
         el.receiptCashier
     ) {
+
         el.receiptCashier.textContent =
             state.profile
                 ?.full_name
@@ -1966,58 +2289,50 @@ function renderReceipt() {
             '-'
     }
 
+
     if (
         el.receiptItems
     ) {
+
         el.receiptItems.innerHTML =
             sale.items
                 .map(
                     item =>
                         `
                         <div
-                            class="
-                                receipt-item
-                            "
+                            class="receipt-item"
                         >
 
                             <div
-                                class="
-                                    receipt-item-name
-                                "
+                                class="receipt-item-name"
                             >
                                 ${esc(
-                            item.name
-                        )
-                        }
+                                    item.name
+                                )}
                             </div>
 
 
                             <div
-                                class="
-                                    receipt-item-line
-                                "
+                                class="receipt-item-line"
                             >
 
                                 <span>
-                                    ${item.quantity
-                        }
+                                    ${item.quantity}
                                     ×
                                     ${money(
-                            item.price
-                        )
-                        }
+                                        item.price
+                                    )}
                                 </span>
 
 
                                 <strong>
                                     ${money(
-                            Number(
-                                item.price
-                            )
-                            *
-                            item.quantity
-                        )
-                        }
+                                        Number(
+                                            item.price
+                                        )
+                                        *
+                                        item.quantity
+                                    )}
                                 </strong>
 
                             </div>
@@ -2028,82 +2343,95 @@ function renderReceipt() {
                 .join('')
     }
 
+
     if (
         el.receiptSubtotal
     ) {
-        el.receiptSubtotal
-            .textContent =
+
+        el.receiptSubtotal.textContent =
             money(
                 sale.subtotal
             )
     }
 
+
     if (
         el.receiptDiscount
     ) {
-        el.receiptDiscount
-            .textContent =
+
+        el.receiptDiscount.textContent =
             money(
                 sale.discount
             )
     }
 
+
     if (
         el.receiptTotal
     ) {
-        el.receiptTotal
-            .textContent =
+
+        el.receiptTotal.textContent =
             money(
                 sale.total
             )
     }
 
+
     if (
         el.receiptReceived
     ) {
-        el.receiptReceived
-            .textContent =
+
+        el.receiptReceived.textContent =
             money(
                 sale.received_amount
             )
     }
 
+
     if (
         el.receiptChange
     ) {
-        el.receiptChange
-            .textContent =
+
+        el.receiptChange.textContent =
             money(
                 sale.change_amount
             )
     }
 
+
     if (
         el.receiptPayment
     ) {
-        el.receiptPayment
-            .textContent =
+
+        el.receiptPayment.textContent =
             sale.payment_method
-                ===
-                'cash'
+            ===
+            'cash'
+
                 ? 'เงินสด'
+
                 : 'QR'
     }
 }
 
 
 function printReceipt() {
+
     if (
         !state.lastSale
     ) {
+
         alert(
             'ยังไม่มีข้อมูลใบเสร็จ'
         )
 
+
         return
     }
 
+
     renderReceipt()
+
 
     window.print()
 }
@@ -2115,48 +2443,68 @@ function printReceipt() {
 
 async function confirmPayment() {
 
-    // ตรวจสอบกะ
+    /*
+     * เช็กกะอีกครั้งก่อนสร้างบิล
+     */
     const shiftReady =
         await requireOpenShift()
 
-    if (!shiftReady) {
+
+    if (
+        !shiftReady
+    ) {
+
         msg(
             el.paymentMessage,
             'กะขายไม่ได้เปิดอยู่ กรุณาเปิดกะก่อนบันทึกการขาย'
         )
 
+
         return
     }
 
-    // ตรวจสอบเงิน
+
     const received =
-        state.paymentMethod === 'cash'
-            ? Number(el.receivedInput.value || 0)
+        state.paymentMethod
+        ===
+        'cash'
+
+            ? Number(
+                el.receivedInput.value
+                ||
+                0
+            )
+
             : total()
 
+
     if (
-        state.paymentMethod === 'cash'
+        state.paymentMethod
+        ===
+        'cash'
         &&
-        received < total()
+        received <
+        total()
     ) {
+
         msg(
             el.paymentMessage,
             'จำนวนเงินที่รับมายังไม่ครบ'
         )
 
+
         return
     }
 
-    /*
-     * เก็บ snapshot ก่อนส่ง RPC
-     * เพื่อใช้ทำใบเสร็จหลังบันทึกสำเร็จ
-     */
 
+    /*
+     * เก็บ snapshot
+     * สำหรับใบเสร็จ
+     */
     const saleSnapshot = {
 
         items:
             items()
-    // ↓↓↓ โค้ดเดิมของคุณต่อจากตรงนี้
                 .map(
                     item => ({
                         id:
@@ -2194,15 +2542,17 @@ async function confirmPayment() {
             new Date()
     }
 
-    el.confirmPaymentBtn
-        .disabled =
+
+    el.confirmPaymentBtn.disabled =
         true
 
-    el.confirmPaymentBtn
-        .textContent =
+
+    el.confirmPaymentBtn.textContent =
         'กำลังบันทึก...'
 
+
     try {
+
         const {
             data,
             error
@@ -2211,20 +2561,16 @@ async function confirmPayment() {
                 'create_pos_sale',
                 {
                     p_branch_id:
-                        state.profile
-                            .branch_id,
+                        state.profile.branch_id,
 
                     p_discount:
-                        saleSnapshot
-                            .discount,
+                        saleSnapshot.discount,
 
                     p_payment_method:
-                        saleSnapshot
-                            .payment_method,
+                        saleSnapshot.payment_method,
 
                     p_received_amount:
-                        saleSnapshot
-                            .received_amount,
+                        saleSnapshot.received_amount,
 
                     p_note:
                         el.saleNote
@@ -2248,47 +2594,53 @@ async function confirmPayment() {
                 }
             )
 
+
         if (error) {
+
             throw error
         }
 
+
         state.lastSale = {
+
             ...saleSnapshot,
+
 
             invoice_no:
                 data.invoice_no,
+
 
             subtotal:
                 Number(
                     data.subtotal
                     ??
-                    saleSnapshot
-                        .subtotal
+                    saleSnapshot.subtotal
                 ),
+
 
             discount:
                 Number(
                     data.discount
                     ??
-                    saleSnapshot
-                        .discount
+                    saleSnapshot.discount
                 ),
+
 
             total:
                 Number(
                     data.total
                     ??
-                    saleSnapshot
-                        .total
+                    saleSnapshot.total
                 ),
+
 
             received_amount:
                 Number(
                     data.received_amount
                     ??
-                    saleSnapshot
-                        .received_amount
+                    saleSnapshot.received_amount
                 ),
+
 
             change_amount:
                 Number(
@@ -2301,32 +2653,35 @@ async function confirmPayment() {
                     )
                 ),
 
+
             payment_method:
                 data.payment_method
                 ??
-                saleSnapshot
-                    .payment_method
+                saleSnapshot.payment_method
         }
+
 
         renderReceipt()
 
+
         closePayment()
 
+
         el.invoiceText.textContent =
-            state.lastSale
-                .invoice_no
+            state.lastSale.invoice_no
+
 
         el.successTotal.textContent =
             money(
-                state.lastSale
-                    .total
+                state.lastSale.total
             )
+
 
         el.successChange.textContent =
             money(
-                state.lastSale
-                    .change_amount
+                state.lastSale.change_amount
             )
+
 
         el.successModal
             .classList
@@ -2334,38 +2689,69 @@ async function confirmPayment() {
                 'hidden'
             )
 
+
         /*
-         * create_pos_sale()
-         * ตัดวัตถุดิบเรียบร้อยแล้ว
-         *
-         * โหลดจำนวนสินค้าที่ขายได้ใหม่
+         * โหลดจำนวนที่ขายได้ใหม่
+         * หลังตัดวัตถุดิบ
          */
         await loadAvailability()
 
+
         renderProducts()
 
+
     } catch (error) {
+
         console.error(
             'Create sale error:',
             error
         )
+
 
         let errorMessage =
             error.message
             ||
             'บันทึกการขายไม่สำเร็จ'
 
+
         /*
-         * สินค้ายังไม่มีสูตร BOM
+         * ไม่มีกะเปิด
+         */
+        if (
+            errorMessage.includes(
+                'SHIFT_NOT_OPEN'
+            )
+            ||
+            errorMessage.includes(
+                'NO_OPEN_SHIFT'
+            )
+        ) {
+
+            errorMessage =
+                'ยังไม่ได้เปิดกะ หรือกะถูกปิดแล้ว กรุณาเปิดกะก่อนขาย'
+
+
+            state.currentShift =
+                null
+
+
+            updateShiftSaleState()
+        }
+
+
+        /*
+         * ไม่มี BOM
          */
         if (
             errorMessage.includes(
                 'PRODUCT_RECIPE_NOT_FOUND'
             )
         ) {
+
             errorMessage =
                 'สินค้าบางรายการยังไม่ได้กำหนดสูตรวัตถุดิบ'
         }
+
 
         /*
          * วัตถุดิบไม่พอ
@@ -2375,12 +2761,14 @@ async function confirmPayment() {
                 'INSUFFICIENT_INGREDIENT_STOCK'
             )
         ) {
+
             const detail =
                 errorMessage
                     .split(
                         'INSUFFICIENT_INGREDIENT_STOCK:'
                     )[1]
                     ?.trim()
+
 
             errorMessage =
                 detail
@@ -2390,6 +2778,7 @@ async function confirmPayment() {
                     : 'วัตถุดิบไม่เพียงพอสำหรับการขาย'
         }
 
+
         /*
          * เงินสดไม่พอ
          */
@@ -2398,9 +2787,11 @@ async function confirmPayment() {
                 'INSUFFICIENT_CASH'
             )
         ) {
+
             errorMessage =
                 'จำนวนเงินที่รับไม่เพียงพอ'
         }
+
 
         /*
          * Product / Quantity ผิด
@@ -2410,22 +2801,25 @@ async function confirmPayment() {
                 'INVALID_PRODUCT_OR_QUANTITY'
             )
         ) {
+
             errorMessage =
                 'พบสินค้าหรือจำนวนสินค้าไม่ถูกต้อง'
         }
+
 
         msg(
             el.paymentMessage,
             errorMessage
         )
 
+
     } finally {
-        el.confirmPaymentBtn
-            .disabled =
+
+        el.confirmPaymentBtn.disabled =
             false
 
-        el.confirmPaymentBtn
-            .textContent =
+
+        el.confirmPaymentBtn.textContent =
             'ยืนยันการชำระเงิน'
     }
 }
@@ -2436,13 +2830,17 @@ async function confirmPayment() {
 ======================================== */
 
 function newSale() {
+
     state.cart.clear()
+
 
     state.lastSale =
         null
 
+
     el.discountInput.value =
         '0'
+
 
     el.successModal
         .classList
@@ -2450,10 +2848,12 @@ function newSale() {
             'hidden'
         )
 
+
     msg(
         el.pageMessage,
         ''
     )
+
 
     renderCart()
 }
@@ -2464,15 +2864,16 @@ function newSale() {
 ======================================== */
 
 async function logout() {
+
     await supabase
         .auth
         .signOut()
+
 
     location.replace(
         './index.html'
     )
 }
-
 
 /* ========================================
    INIT
@@ -2483,8 +2884,7 @@ async function init() {
     try {
 
         /*
-         * POS อนุญาต
-         * Admin / Manager / Staff
+         * ตรวจ Session
          */
         const session =
             await requireSession()
@@ -2499,7 +2899,7 @@ async function init() {
 
 
         /*
-         * โหลดข้อมูลผู้ใช้
+         * โหลด Profile
          */
         await loadProfile(
             session.user.id
@@ -2513,22 +2913,13 @@ async function init() {
 
 
         /*
-         * แสดงชื่อผู้ใช้ / สาขา
+         * แสดงข้อมูลผู้ใช้
          */
         renderUser()
 
 
         /*
-         * =====================================
          * โหลดกะปัจจุบัน
-         * =====================================
-         *
-         * ถ้ามีกะเปิดอยู่
-         * -> POS ขายได้
-         *
-         * ถ้ายังไม่เปิดกะ
-         * -> POS ยังเข้าได้
-         * -> แต่ปุ่มชำระเงินจะถูกล็อก
          */
         try {
 
@@ -2548,7 +2939,7 @@ async function init() {
 
 
         /*
-         * โหลดสินค้า / หมวดหมู่ / BOM
+         * โหลดสินค้า
          */
         await loadCatalog()
 
@@ -2560,7 +2951,7 @@ async function init() {
 
 
         /*
-         * ตรวจสถานะปุ่มชำระเงินอีกครั้ง
+         * ตรวจสถานะกะ
          */
         updateShiftSaleState()
 
@@ -2599,239 +2990,389 @@ async function init() {
    EVENTS
 ======================================== */
 
-el.backBtn.onclick =
-    () => {
-        location.href =
-            './dashboard.html'
-    }
+
+/* ========================================
+   BACK
+======================================== */
+
+el.backBtn
+    ?.addEventListener(
+        'click',
+        () => {
+
+            location.href =
+                './dashboard.html'
+        }
+    )
 
 
-el.logoutBtn.onclick =
-    logout
+/* ========================================
+   LOGOUT
+======================================== */
+
+el.logoutBtn
+    ?.addEventListener(
+        'click',
+        logout
+    )
 
 
-/* SEARCH */
+/* ========================================
+   SEARCH
+======================================== */
 
-el.searchInput.oninput =
-    renderProducts
+el.searchInput
+    ?.addEventListener(
+        'input',
+        renderProducts
+    )
 
 
 /* ========================================
    REFRESH
 ======================================== */
 
-el.refreshBtn.onclick =
-    async () => {
+el.refreshBtn
+    ?.addEventListener(
+        'click',
+        async () => {
 
-        try {
+            try {
 
-            msg(
-                el.pageMessage,
-                ''
-            )
-
-
-            /*
-             * ตรวจสอบกะล่าสุดก่อน
-             */
-            await loadCurrentShift()
+                msg(
+                    el.pageMessage,
+                    ''
+                )
 
 
-            /*
-             * โหลดสินค้า / BOM ใหม่
-             */
-            await loadCatalog()
+                /*
+                 * ตรวจสถานะกะใหม่
+                 */
+                await loadCurrentShift()
 
 
-            /*
-             * อัปเดตตะกร้า
-             */
-            renderCart()
+                /*
+                 * โหลดสินค้าใหม่
+                 */
+                await loadCatalog()
 
 
-            /*
-             * เปิด / ปิดปุ่มชำระเงิน
-             * ตามสถานะกะ
-             */
-            updateShiftSaleState()
+                /*
+                 * อัปเดตตะกร้า
+                 */
+                renderCart()
 
 
-        } catch (error) {
-
-            console.error(
-                'Refresh error:',
-                error
-            )
+                /*
+                 * อัปเดตสถานะปุ่มขาย
+                 */
+                updateShiftSaleState()
 
 
-            msg(
-                el.pageMessage,
-                error.message
-                ||
-                'รีเฟรชข้อมูลไม่สำเร็จ'
+            } catch (error) {
+
+                console.error(
+                    'Refresh error:',
+                    error
+                )
+
+
+                msg(
+                    el.pageMessage,
+                    error.message
+                    ||
+                    'รีเฟรชข้อมูลไม่สำเร็จ'
+                )
+            }
+        }
+    )
+
+
+/* ========================================
+   CATEGORY
+======================================== */
+
+el.categoryTabs
+    ?.addEventListener(
+        'click',
+        event => {
+
+            const button =
+                event.target.closest(
+                    '[data-cat]'
+                )
+
+
+            if (!button) {
+
+                return
+            }
+
+
+            state.selectedCategory =
+                button.dataset.cat
+
+
+            renderCategories()
+
+
+            renderProducts()
+        }
+    )
+
+
+/* ========================================
+   PRODUCT
+======================================== */
+
+el.productGrid
+    ?.addEventListener(
+        'click',
+        event => {
+
+            const button =
+                event.target.closest(
+                    '[data-add]'
+                )
+
+
+            if (!button) {
+
+                return
+            }
+
+
+            if (
+                button.disabled
+            ) {
+
+                return
+            }
+
+
+            add(
+                button.dataset.add
             )
         }
-    }
+    )
 
 
-/* CATEGORY */
+/* ========================================
+   CART ITEMS
+======================================== */
 
-el.categoryTabs.onclick =
-    event => {
+el.cartItems
+    ?.addEventListener(
+        'click',
+        event => {
 
-        const button =
-            event.target.closest(
-                '[data-cat]'
-            )
+            const button =
+                event.target.closest(
+                    '[data-act]'
+                )
 
-        if (!button) {
-            return
+
+            if (!button) {
+
+                return
+            }
+
+
+            const id =
+                button.dataset.id
+
+
+            const action =
+                button.dataset.act
+
+
+            if (
+                action ===
+                'inc'
+            ) {
+
+                qty(
+                    id,
+                    1
+                )
+
+
+                return
+            }
+
+
+            if (
+                action ===
+                'dec'
+            ) {
+
+                qty(
+                    id,
+                    -1
+                )
+
+
+                return
+            }
+
+
+            if (
+                action ===
+                'remove'
+            ) {
+
+                state.cart.delete(
+                    id
+                )
+
+
+                msg(
+                    el.pageMessage,
+                    ''
+                )
+
+
+                renderCart()
+            }
         }
-
-        state.selectedCategory =
-            button.dataset.cat
-
-        renderCategories()
-
-        renderProducts()
-    }
+    )
 
 
-/* PRODUCT */
+/* ========================================
+   DISCOUNT
+======================================== */
 
-el.productGrid.onclick =
-    event => {
-
-        const button =
-            event.target.closest(
-                '[data-add]'
-            )
-
-        if (!button) {
-            return
-        }
-
-        /*
-         * disabled button จะไม่ควรเข้ามาตรงนี้
-         * แต่เช็กซ้ำไว้เพื่อความปลอดภัย
-         */
-        if (
-            button.disabled
-        ) {
-            return
-        }
-
-        add(
-            button.dataset.add
-        )
-    }
+el.discountInput
+    ?.addEventListener(
+        'input',
+        renderCart
+    )
 
 
-/* CART */
+/* ========================================
+   CLEAR CART
+======================================== */
 
-el.cartItems.onclick =
-    event => {
+el.clearCartBtn
+    ?.addEventListener(
+        'click',
+        () => {
 
-        const button =
-            event.target.closest(
-                '[data-act]'
-            )
+            if (
+                !state.cart.size
+            ) {
 
-        if (!button) {
-            return
-        }
-
-        const id =
-            button.dataset.id
-
-        const action =
-            button.dataset.act
-
-        if (
-            action ===
-            'inc'
-        ) {
-            qty(
-                id,
-                1
-            )
-
-            return
-        }
-
-        if (
-            action ===
-            'dec'
-        ) {
-            qty(
-                id,
-                -1
-            )
-
-            return
-        }
-
-        if (
-            action ===
-            'remove'
-        ) {
-            state.cart.delete(
-                id
-            )
-
-            msg(
-                el.pageMessage,
-                ''
-            )
-
-            renderCart()
-        }
-    }
+                return
+            }
 
 
-/* DISCOUNT */
+            const confirmed =
+                confirm(
+                    'ล้างตะกร้าหรือไม่?'
+                )
 
-el.discountInput.oninput =
-    renderCart
+
+            if (
+                !confirmed
+            ) {
+
+                return
+            }
 
 
-/* CLEAR CART */
-
-el.clearCartBtn.onclick =
-    () => {
-        if (
-            !state.cart.size
-        ) {
-            return
-        }
-
-        if (
-            confirm(
-                'ล้างตะกร้าหรือไม่?'
-            )
-        ) {
             state.cart.clear()
+
 
             el.discountInput.value =
                 '0'
 
+
             msg(
                 el.pageMessage,
                 ''
             )
 
+
             renderCart()
         }
+    )
+
+
+/* ========================================
+   MOBILE CART BAR
+======================================== */
+
+el.mobileCartBar
+    ?.addEventListener(
+        'click',
+        () => {
+
+            openMobileCart()
+        }
+    )
+
+
+/* ========================================
+   CLOSE MOBILE CART
+======================================== */
+
+el.mobileCartClose
+    ?.addEventListener(
+        'click',
+        () => {
+
+            closeMobileCart()
+        }
+    )
+
+
+/* ========================================
+   CART BACKDROP
+======================================== */
+
+el.cartBackdrop
+    ?.addEventListener(
+        'click',
+        () => {
+
+            closeMobileCart()
+        }
+    )
+
+
+/* ========================================
+   WINDOW RESIZE
+======================================== */
+
+window.addEventListener(
+    'resize',
+    () => {
+
+        if (
+            window.innerWidth >
+            760
+        ) {
+
+            closeMobileCart()
+        }
     }
+)
 
 
-/* CHECKOUT */
+/* ========================================
+   CHECKOUT
+======================================== */
 
-el.checkoutBtn.onclick =
-    openPayment
+el.checkoutBtn
+    ?.addEventListener(
+        'click',
+        openPayment
+    )
 
 
-/* PAYMENT METHODS */
+/* ========================================
+   PAYMENT METHODS
+======================================== */
 
 document
     .querySelectorAll(
@@ -2840,149 +3381,261 @@ document
     .forEach(
         button => {
 
-            button.onclick =
-                () => {
+            button
+                .addEventListener(
+                    'click',
+                    () => {
 
-                    state.paymentMethod =
-                        button
-                            .dataset
-                            .method
+                        /*
+                         * เปลี่ยนวิธีชำระ
+                         */
+                        state.paymentMethod =
+                            button.dataset.method
 
-                    document
-                        .querySelectorAll(
-                            '.method'
-                        )
-                        .forEach(
-                            item => {
 
-                                item
-                                    .classList
-                                    .toggle(
-                                        'active',
-                                        item ===
-                                        button
-                                    )
-                            }
-                        )
+                        /*
+                         * เปลี่ยนปุ่ม active
+                         */
+                        document
+                            .querySelectorAll(
+                                '.method'
+                            )
+                            .forEach(
+                                item => {
 
-                    el.cashSection
-                        .classList
-                        .toggle(
-                            'hidden',
-                            state.paymentMethod
-                            !==
-                            'cash'
-                        )
+                                    item
+                                        .classList
+                                        .toggle(
+                                            'active',
+                                            item ===
+                                            button
+                                        )
+                                }
+                            )
 
-                    el.qrSection
-                        .classList
-                        .toggle(
-                            'hidden',
-                            state.paymentMethod
-                            !==
+
+                        /*
+                         * แสดง/ซ่อนเงินสด
+                         */
+                        el.cashSection
+                            .classList
+                            .toggle(
+                                'hidden',
+                                state.paymentMethod
+                                !==
+                                'cash'
+                            )
+
+
+                        /*
+                         * แสดง/ซ่อน QR
+                         */
+                        el.qrSection
+                            .classList
+                            .toggle(
+                                'hidden',
+                                state.paymentMethod
+                                !==
+                                'qr'
+                            )
+
+
+                        /*
+                         * สร้าง QR
+                         */
+                        if (
+                            state.paymentMethod ===
                             'qr'
+                        ) {
+
+                            renderPromptPayQr()
+                        }
+
+
+                        msg(
+                            el.paymentMessage,
+                            ''
                         )
-
-                    if (
-                        state.paymentMethod
-                        ===
-                        'qr'
-                    ) {
-                        renderPromptPayQr()
                     }
-
-                    msg(
-                        el.paymentMessage,
-                        ''
-                    )
-                }
+                )
         }
     )
 
 
-/* CASH INPUT */
+/* ========================================
+   CASH INPUT
+======================================== */
 
-el.receivedInput.oninput =
-    updateChange
+el.receivedInput
+    ?.addEventListener(
+        'input',
+        updateChange
+    )
 
 
-/* QUICK CASH */
+/* ========================================
+   QUICK CASH
+======================================== */
 
-el.quickCash.onclick =
-    event => {
+el.quickCash
+    ?.addEventListener(
+        'click',
+        event => {
 
-        const button =
-            event.target.closest(
-                '[data-cash]'
-            )
+            const button =
+                event.target.closest(
+                    '[data-cash]'
+                )
 
-        if (!button) {
-            return
+
+            if (!button) {
+
+                return
+            }
+
+
+            el.receivedInput.value =
+                button.dataset.cash
+
+
+            updateChange()
         }
-
-        el.receivedInput.value =
-            button
-                .dataset
-                .cash
-
-        updateChange()
-    }
+    )
 
 
-/* CLOSE PAYMENT */
+/* ========================================
+   CLOSE PAYMENT
+======================================== */
 
-el.closePaymentBtn.onclick =
-    closePayment
-
-
-el.cancelPaymentBtn.onclick =
-    closePayment
-
-
-/* CONFIRM */
-
-el.confirmPaymentBtn.onclick =
-    confirmPayment
+el.closePaymentBtn
+    ?.addEventListener(
+        'click',
+        closePayment
+    )
 
 
-/* PRINT */
+el.cancelPaymentBtn
+    ?.addEventListener(
+        'click',
+        closePayment
+    )
 
-if (
-    el.printReceiptBtn
-) {
-    el.printReceiptBtn.onclick =
+
+/* ========================================
+   CONFIRM PAYMENT
+======================================== */
+
+el.confirmPaymentBtn
+    ?.addEventListener(
+        'click',
+        confirmPayment
+    )
+
+
+/* ========================================
+   PRINT
+======================================== */
+
+el.printReceiptBtn
+    ?.addEventListener(
+        'click',
         printReceipt
-}
+    )
 
 
-/* NEW SALE */
+/* ========================================
+   NEW SALE
+======================================== */
 
-el.newSaleBtn.onclick =
-    newSale
+el.newSaleBtn
+    ?.addEventListener(
+        'click',
+        newSale
+    )
+
+
+/* ========================================
+   ESC KEY
+======================================== */
+
+document
+    .addEventListener(
+        'keydown',
+        event => {
+
+            if (
+                event.key !==
+                'Escape'
+            ) {
+
+                return
+            }
+
+
+            /*
+             * ปิด Mobile Cart ก่อน
+             */
+            if (
+                el.cartPanel
+                    ?.classList
+                    .contains(
+                        'mobile-open'
+                    )
+            ) {
+
+                closeMobileCart()
+
+
+                return
+            }
+
+
+            /*
+             * ปิด Payment Modal
+             */
+            if (
+                el.paymentModal
+                &&
+                !el.paymentModal
+                    .classList
+                    .contains(
+                        'hidden'
+                    )
+            ) {
+
+                closePayment()
+
+
+                return
+            }
+        }
+    )
 
 
 /* ========================================
    AUTH CHANGE
 ======================================== */
 
-supabase.auth.onAuthStateChange(
-    (
-        event,
-        session
-    ) => {
+supabase.auth
+    .onAuthStateChange(
+        (
+            event,
+            session
+        ) => {
 
-        if (
-            event ===
-            'SIGNED_OUT'
-            ||
-            !session
-        ) {
-            location.replace(
-                './index.html'
-            )
+            if (
+                event ===
+                'SIGNED_OUT'
+                ||
+                !session
+            ) {
+
+                location.replace(
+                    './index.html'
+                )
+            }
         }
-    }
-)
+    )
 
 
 /* ========================================
