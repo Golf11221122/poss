@@ -2733,3 +2733,117 @@ and
         display: none !important;
     }
 }
+
+/* ========================================
+   MOBILE PAYMENT SCREEN FIX
+======================================== */
+
+@media (max-width: 760px) {
+
+    /* ----------------------------------------
+       Search + Category
+       ล็อกเฉพาะหน้าเมนู
+    ----------------------------------------- */
+
+    .toolbar {
+        position: sticky !important;
+        top: 58px !important;
+
+        /*
+         * ต้องต่ำกว่า Modal
+         */
+        z-index: 40 !important;
+    }
+
+
+    .tabs {
+        position: sticky !important;
+        top: 108px !important;
+
+        /*
+         * ต้องต่ำกว่า Modal
+         */
+        z-index: 39 !important;
+    }
+
+
+    /* ----------------------------------------
+       Payment Modal
+       ให้อยู่เหนือทุกอย่าง
+    ----------------------------------------- */
+
+    #paymentModal {
+        z-index: 20000 !important;
+    }
+
+
+    #paymentModal .modal-card {
+        position: relative !important;
+        z-index: 20001 !important;
+    }
+
+
+    /* ----------------------------------------
+       ตอนเปิด Payment
+       ซ่อน Search / Category
+    ----------------------------------------- */
+
+    body:has(#paymentModal:not(.hidden))
+    .toolbar,
+
+    body:has(#paymentModal:not(.hidden))
+    .tabs {
+
+        visibility: hidden !important;
+    }
+
+
+    /* ----------------------------------------
+       ตอนเปิด Payment
+       ซ่อนแถบตะกร้าสีเหลือง
+    ----------------------------------------- */
+
+    body:has(#paymentModal:not(.hidden))
+    .mobile-cart-bar {
+
+        display: none !important;
+    }
+
+
+    /* ----------------------------------------
+       ตอนเปิดตะกร้า Bottom Sheet
+       ก็ซ่อนแถบตะกร้าล่างเช่นกัน
+    ----------------------------------------- */
+
+    body:has(.cart.mobile-open)
+    .mobile-cart-bar {
+
+        display: none !important;
+    }
+
+
+    /* ----------------------------------------
+       Mobile Cart Bar
+       ใช้เฉพาะหน้าเลือกสินค้า
+    ----------------------------------------- */
+
+    .mobile-cart-bar {
+
+        position: fixed !important;
+
+        left: 12px !important;
+        right: 12px !important;
+
+        top: auto !important;
+
+        bottom: calc(
+            8px + env(safe-area-inset-bottom)
+        ) !important;
+
+        margin: 0 !important;
+
+        width: auto !important;
+
+        z-index: 500 !important;
+    }
+}
