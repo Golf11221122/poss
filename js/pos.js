@@ -2722,6 +2722,15 @@ async function confirmPayment() {
             .remove(
                 'hidden'
             )
+            
+            /*
+ * ล้างตะกร้าหลังชำระเงินสำเร็จ
+ */
+state.cart.clear()
+
+el.discountInput.value = '0'
+
+renderCart()
 
 
         /*
