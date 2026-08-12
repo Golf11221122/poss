@@ -1481,41 +1481,50 @@ function renderProducts() {
                      * - หมด
                      * - ใกล้หมด <= 10
                      */
-                    let stockText =
-                        ''
+                   let stockText =
+    ''
 
 
-                    if (
-                        soldOut
-                    ) {
+if (
+    soldOut
+) {
 
-                        stockText =
-                            `
-                            <div
-                                class="stock-status stock-out"
-                            >
-                                สินค้าหมด
-                            </div>
-                            `
+    stockText =
+        `
+        <div
+            class="stock-status stock-out"
+            style="
+                margin-top:6px;
+                font-size:13px;
+                font-weight:700;
+                color:#d93025;
+            "
+        >
+            สินค้าหมด
+        </div>
+        `
 
-                    } else if (
-                        availableQty <=
-                        10
-                    ) {
+} else {
 
-                        stockText =
-                            `
-                            <div
-                                class="stock-status stock-low"
-                            >
-                                เหลือ
-                                ${availableQty.toLocaleString(
-                                    'th-TH'
-                                )}
-                                จาน
-                            </div>
-                            `
-                    }
+    stockText =
+        `
+        <div
+            class="stock-status stock-available"
+            style="
+                margin-top:6px;
+                font-size:12px;
+                font-weight:700;
+                color:#188038;
+            "
+        >
+            ขายได้อีก
+            ${availableQty.toLocaleString(
+                'th-TH'
+            )}
+            จาน
+        </div>
+        `
+}
 
 
                     return `
