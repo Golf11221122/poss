@@ -105,8 +105,33 @@ const el = {
         $('checkoutBtn'),
 
     pageMessage:
-        $('pageMessage'),
+    $('pageMessage'),
 
+
+/* ========================================
+   MOBILE CART
+======================================== */
+
+mobileCartBar:
+    $('mobileCartBar'),
+
+mobileCartCount:
+    $('mobileCartCount'),
+
+mobileCartTotal:
+    $('mobileCartTotal'),
+
+mobileCartClose:
+    $('mobileCartClose'),
+
+cartPanel:
+    $('cartPanel'),
+
+cartBackdrop:
+    $('cartBackdrop'),
+
+
+/* PAYMENT */
 
     /* PAYMENT */
 
