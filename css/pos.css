@@ -2574,3 +2574,45 @@ and
     }
 
 }
+
+/* ========================================
+   FIX MOBILE CART BAR TO BOTTOM
+======================================== */
+
+@media (max-width: 760px) {
+
+    .mobile-cart-bar {
+        position: fixed !important;
+
+        left: 10px !important;
+        right: 10px !important;
+
+        bottom: calc(
+            10px + env(safe-area-inset-bottom)
+        ) !important;
+
+        top: auto !important;
+
+        margin: 0 !important;
+
+        transform: none;
+
+        z-index: 999 !important;
+    }
+
+
+    /*
+     * เว้นพื้นที่ล่าง
+     * ไม่ให้สินค้าถูกแถบตะกร้าบัง
+     */
+    body {
+        padding-bottom: calc(
+            90px + env(safe-area-inset-bottom)
+        ) !important;
+    }
+
+
+    .catalog {
+        padding-bottom: 30px !important;
+    }
+}
