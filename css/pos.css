@@ -2576,43 +2576,75 @@ and
 }
 
 /* ========================================
-   FIX MOBILE CART BAR TO BOTTOM
+   MOBILE CART BAR - FINAL FIX
 ======================================== */
 
 @media (max-width: 760px) {
 
+    /* แถบตะกร้าลอยด้านล่าง */
     .mobile-cart-bar {
         position: fixed !important;
 
-        left: 10px !important;
-        right: 10px !important;
+        left: 12px !important;
+        right: 12px !important;
 
-        bottom: calc(
-            10px + env(safe-area-inset-bottom)
+        bottom: max(
+            8px,
+            env(safe-area-inset-bottom)
         ) !important;
 
         top: auto !important;
 
         margin: 0 !important;
 
-        transform: none;
+        transform: none !important;
 
-        z-index: 999 !important;
+        z-index: 50 !important;
+    }
+
+
+    /* เว้นพื้นที่ให้สินค้าไม่ถูกแถบตะกร้าบัง */
+    .catalog {
+        padding-bottom: 120px !important;
     }
 
 
     /*
-     * เว้นพื้นที่ล่าง
-     * ไม่ให้สินค้าถูกแถบตะกร้าบัง
+     * เมื่อตะกร้าถูกเปิด
+     * ซ่อนแถบตะกร้าสีเหลืองด้านล่าง
      */
-    body {
-        padding-bottom: calc(
-            90px + env(safe-area-inset-bottom)
-        ) !important;
+    body:has(.cart.mobile-open) .mobile-cart-bar {
+        display: none !important;
     }
 
 
-    .catalog {
-        padding-bottom: 30px !important;
+    /*
+     * ตะกร้า Bottom Sheet
+     * ให้อยู่ชิดล่าง
+     */
+    .cart.mobile-open {
+        position: fixed !important;
+
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+
+        height: min(75vh, 650px) !important;
+
+        z-index: 1001 !important;
+
+        border-radius: 22px 22px 0 0 !important;
+
+        padding-bottom:
+            env(safe-area-inset-bottom);
     }
+
+
+    .cart-backdrop.show {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000 !important;
+    }
+}
 }
